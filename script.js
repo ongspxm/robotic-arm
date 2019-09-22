@@ -44,10 +44,10 @@ function figY(y) {
 }
 
 // NOTE: drawing funcs
-function posGrid(div, x, y) {
+function posGrid(div, x, y, r = simu.point.R) {
     // NOTE: X & Y = [0, 1] proportion of W, H
-    div.style.top = (y * simu.grid.S) - simu.point.R;
-    div.style.left = (x * simu.grid.S) - simu.point.R;
+    div.style.top = (y * simu.grid.S) - r;
+    div.style.left = (x * simu.grid.S) - r;
 }
 
 function posFigLine(div, A, B) {
@@ -118,7 +118,7 @@ function init() {
     btn.textContent = 'update arm lengths';
     $('settings').appendChild(btn);
 
-    move();
+    refreshSettings();
 }
 
 function move() {
@@ -178,20 +178,52 @@ function update(x, y, z) {
         b3: CD,
     } = simu.arms;
 
+    {
+        const AC = AB+BC, CE = CD+DE;
+        const angle = getAngleC(AC, CD, AD);
+        const C2 = AC*AC + CE*CE - 2*AC*CE*Math.cos(angle);
+        const minL = Math.sqrt(C2 - z*z);
+
+        const BE = BC+CD+DE;
+        const angle2 = getAngleC(AB, BC+CD, AD);
+        const D2 = AB*AB + BE*BE - 2*AB*BE*Math.cos(angle2);
+        const maxL = Math.sqrt(D2 - z*z);
+
+        const l = Math.sqrt(x*x + y*y);
+
+        if (l<minL || l>maxL) {
+            if ($('ctrla').checked) {
+                const newPt = (l<minL)
+                    ? extend([0,0], [x,y], minL-l)
+                    : extend([0,0], [x,y], maxL-l);
+                x = newPt[0];
+                y = newPt[1];
+            } else {
+                return doError();
+            }
+        }
+
+        const minR = minL * simu.fig.S/2;
+        $('minR').style.width = minR*2;
+        $('minR').style.height = minR*2;
+        posGrid($('minR'), 0.5, 0.5, minR);
+
+        const maxR = maxL * simu.fig.S/2;
+        $('maxR').style.width = maxR*2;
+        $('maxR').style.height = maxR*2;
+        posGrid($('maxR'), 0.5, 0.5, maxR);
+    }
+
     const A = [0, 0];
     const E = [Math.sqrt(x*x + y*y), z];
-
     const AE = Math.sqrt(x*x + y*y + z*z);
-    if (AE > AD+DE) { return doError(); }
 
     const DAE = getAngleC(AD, AE, DE);
     const angle1 = DAE + Math.asin(z/AE);
 
     const D = getXY(A, AD, angle1);
     const C = extend(E, D, CD);
-
     const AC = getDist(A, C);
-    if (AC > AB+BC) { return doError(); }
 
     const CAD = getAngleC(AC, AD, CD);
     const BAC = getAngleC(AB, AC, BC);
