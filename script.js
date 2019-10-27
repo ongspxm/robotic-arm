@@ -1,3 +1,5 @@
+// NOTE: this is following the tutorial from https://ongspxm.github.io/blog/2019/09/robotic-arms/
+
 function $(id) {
     return document.getElementById(id);
 }
